@@ -24,10 +24,12 @@ class k_min_cut
     // The min flow map
     ListGraph::NodeMap<int> _fl;
 
+
+public:
+
     // The Gomory-Hu Tree
     ListGraph _tree;
 
-public:
     k_min_cut(ListGraph const& graph, ListGraph::EdgeMap<int> const& weights)
       : _graph(graph)
       , _weights(weights)
@@ -60,6 +62,12 @@ public:
         // Choose a root node
         ListGraph::NodeIt s(_graph);
 
+        // Initialize the predecessor map
+        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
+        {
+            _p[n] = s;
+        }
+
         for (ListGraph::NodeIt t(s); t != INVALID; ++t)
         {
             if (s == t)
@@ -75,7 +83,7 @@ public:
                     _p[i] = s;
                 }
             }
-            if (min_cut.minCut(_p[t]))
+            if (_p[t] != INVALID && min_cut.minCut(_p[t]))
             {
                 _p[s] = _p[t];
                 _p[t] = s;

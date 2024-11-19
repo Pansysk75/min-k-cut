@@ -3,6 +3,7 @@
 #include <lemon/list_graph.h>
 #include "mtx_reader.hpp"
 #include "k_min_cut.hpp"
+#include "dot_writer.hpp"
 
 using namespace lemon;
 
@@ -28,7 +29,20 @@ int main()
 
     k_min_cut kmc(g, weights);
 
+    kmc.run_gomory_hu();
+    
 
+    // write original graph to dot file
+    //std::ofstream dot_file("graph.dot");
+    //writeDotGraph(g, weights, dot_file);
+    writeDotGraph(g, weights);
+
+
+    // write Gomory-Hu tree to dot file
+    //std::ofstream dot_file_gh("graph_gh.dot");
+    //writeDotGraph(kmc._tree, weights, dot_file_gh);
+    writeDotGraph(kmc._tree, weights);
+   
 
 
     return 0;
