@@ -13,7 +13,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # This is needed because lemon uses `register` storage
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
+if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
+endif()
 
 # helps your code editor and extensions
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

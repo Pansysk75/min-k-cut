@@ -14,7 +14,7 @@ std::istream& readMtxGraph(
 
     // First line start with "%%MatrixMarket matrix coordinate*"
     if (!getline(is, line) ||
-        line.substr(0, 33) != "%%MatrixMarket matrix coordinate")
+        line.substr(0, 32) != "%%MatrixMarket matrix coordinate")
     {
         std::cerr << "Invalid MatrixMarket header" << std::endl;
         return is;
@@ -31,7 +31,7 @@ std::istream& readMtxGraph(
 
     // Read header
     int n, m;
-    if (!(is >> n >> n >> m))
+    if (!(std::istringstream(line) >> n >> n >> m))
     {
         std::cerr << "Invalid MatrixMarket header" << std::endl;
         return is;
@@ -66,3 +66,4 @@ std::istream& readMtxGraph(
 
     return is;
 }
+
