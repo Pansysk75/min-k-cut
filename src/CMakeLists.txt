@@ -1,4 +1,4 @@
-set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src)
+set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
 
 add_executable(main main.cpp)
 target_link_libraries(main PRIVATE lemon)

@@ -1,4 +1,4 @@
-set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src)
+set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
 
 function (_add_test name)
   add_executable(${name} ${name}.cpp)
@@ -8,4 +8,4 @@ endfunction()
 
 
 _add_test(test_mtx_reader)
-_add_test(test_gomory_hu)
+_add_test(test_k_min_cut)
