@@ -2,6 +2,7 @@
 #include <lemon/lgf_reader.h>
 #include <lemon/list_graph.h>
 #include "mtx_reader.hpp"
+#include "k_min_cut.hpp"
 
 using namespace lemon;
 
@@ -25,7 +26,8 @@ int main()
 
     readMtxGraph(g, weights, std::istringstream(mtx_graph));
 
-    // TODO write test
+    k_min_cut kmc(g, weights);
+
 
 
 

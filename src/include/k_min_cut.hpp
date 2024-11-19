@@ -10,25 +10,25 @@
 
 class k_min_cut
 {
-    using ListDigraph = lemon::ListDigraph;
+    using ListGraph = lemon::ListGraph;
     static constexpr auto INVALID = lemon::INVALID;
 
-    ListDigraph const& _graph;
-    ListDigraph::ArcMap<int> const& _weights;
+    ListGraph const& _graph;
+    ListGraph::EdgeMap<int> const& _weights;
 
     // The Gomory-Hu tree is encoded in the _p (predecessor) and _fl (min flow) maps as follows:
     // "The edges of T are the final pairs (i,p[i]) for from 2 to n, and edge (i,p[i]) has value fl(i)."
 
     // The predecessor map
-    ListDigraph::NodeMap<ListDigraph::Node> _p;
+    ListGraph::NodeMap<ListGraph::Node> _p;
     // The min flow map
-    ListDigraph::NodeMap<int> _fl;
+    ListGraph::NodeMap<int> _fl;
 
     // The Gomory-Hu Tree
-    ListDigraph _tree;
+    ListGraph _tree;
 
 public:
-    k_min_cut(ListDigraph const& graph, ListDigraph::ArcMap<int> const& weights)
+    k_min_cut(ListGraph const& graph, ListGraph::EdgeMap<int> const& weights)
       : _graph(graph)
       , _weights(weights)
       , _p(graph)
@@ -58,17 +58,17 @@ public:
     end;
 */
         // Choose a root node
-        ListDigraph::NodeIt s(_graph);
+        ListGraph::NodeIt s(_graph);
 
-        for (ListDigraph::NodeIt t(s); t != INVALID; ++t)
+        for (ListGraph::NodeIt t(s); t != INVALID; ++t)
         {
             if (s == t)
                 continue;
-            lemon::Preflow<ListDigraph, ListDigraph::ArcMap<int>> min_cut(
+            lemon::Preflow<ListGraph, ListGraph::EdgeMap<int>> min_cut(
                 _graph, _weights, s, t);
             min_cut.run();
             _fl[t] = min_cut.flowValue();
-            for (ListDigraph::NodeIt i(_graph); i != INVALID; ++i)
+            for (ListGraph::NodeIt i(_graph); i != INVALID; ++i)
             {
                 if (i != s && min_cut.minCut(i) && _p[i] == t)
                 {
@@ -88,16 +88,16 @@ public:
         // and edges (i, p[i]) with weight fl[i].
         // Making it into a graph to make it easier to traverse, however in principle _p is enough to represent the tree.
         // An important property here is that each node has a single parent (except the root node which has none).
-        for (ListDigraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
             _tree.addNode();
         }
 
-        for (ListDigraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
             if (_p[n] != INVALID)
             {
-                ListDigraph::Arc a = _tree.addArc(n, _p[n]);
+                _tree.addEdge(n, _p[n]);
             }
         }
     }
@@ -107,7 +107,7 @@ public:
         // Sum the k smallest values in _fl
         std::vector<int> k_heap;
 
-        for (ListDigraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
             k_heap.push_back(_fl[n]);
             std::push_heap(k_heap.begin(), k_heap.end());
@@ -126,7 +126,7 @@ public:
     }
 
     void min_k_cut_map(
-        unsigned int k, ListDigraph::NodeMap<unsigned int>& cut_map)
+        unsigned int k, ListGraph::NodeMap<unsigned int>& cut_map)
     {
         // Creates a cut_map, which stores a unique integer value for each connected component
         // created by the min-k cut
@@ -136,11 +136,11 @@ public:
         // Color the connected components of the resulting graph
 
         // Find the k smallest values in _fl
-        std::vector<ListDigraph::Node> k_heap;
-        auto comp = [&](ListDigraph::Node a, ListDigraph::Node b) {
+        std::vector<ListGraph::Node> k_heap;
+        auto comp = [&](ListGraph::Node a, ListGraph::Node b) {
             return _fl[a] < _fl[b];
         };
-        for (ListDigraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
             k_heap.push_back(n);
             std::push_heap(k_heap.begin(), k_heap.end(), comp);
@@ -152,15 +152,15 @@ public:
         }
 
         // Make a copy of _tree
-        ListDigraph tree_copy;
-        lemon::DigraphCopy<ListDigraph, ListDigraph> copy(_tree, tree_copy);
+        ListGraph tree_copy;
+        lemon::GraphCopy<ListGraph, ListGraph> copy(_tree, tree_copy);
         copy.run();
 
         // Delete the k corresponding edges
         for (auto& n : k_heap)
         {
             // By construction, node n only has a single outgoing edge
-            ListDigraph::OutArcIt e(_tree, n);
+            ListGraph::OutArcIt e(_tree, n);
             if (e != INVALID)
                 tree_copy.erase(e);
         }
@@ -168,22 +168,22 @@ public:
         // Color the connected components of the resulting graph
         unsigned int color = 0;
         // Do a DFS on the tree_copy
-        for (ListDigraph::NodeIt n(tree_copy); n != INVALID; ++n)
+        for (ListGraph::NodeIt n(tree_copy); n != INVALID; ++n)
         {
             if (cut_map[n] == 0)
             {
                 color++;
-                std::stack<ListDigraph::Node> stack;
+                std::stack<ListGraph::Node> stack;
                 stack.push(n);
                 while (!stack.empty())
                 {
-                    ListDigraph::Node m = stack.top();
+                    ListGraph::Node m = stack.top();
                     stack.pop();
                     cut_map[m] = color;
-                    for (ListDigraph::OutArcIt e(tree_copy, m); e != INVALID;
+                    for (ListGraph::OutArcIt e(tree_copy, m); e != INVALID;
                          ++e)
                     {
-                        ListDigraph::Node v = tree_copy.target(e);
+                        ListGraph::Node v = tree_copy.target(e);
                         if (cut_map[v] == 0)
                         {
                             stack.push(v);
