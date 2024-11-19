@@ -8,3 +8,4 @@ endfunction()
 
 
 _add_test(test_mtx_reader)
+_add_test(test_gomory_hu)

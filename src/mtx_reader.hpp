@@ -38,30 +38,39 @@ std::istream& readMtxGraph(
     }
 
     // Add nodes
-    std::vector<typename Graph::Node> nodes;
     for (int i = 0; i < n; ++i)
     {
-        nodes.push_back(graph.addNode());
+        graph.addNode();
     }
 
     // Add edges
     for (int i = 0; i < m; ++i)
     {
-        int u, v, w;
-        if (!(is >> u >> v))
+        if (!getline(is, line))
         {
+            std::cerr << "Invalid MatrixMarket data" << std::endl;
             return is;
         }
-        auto edge = graph.addEdge(nodes[u - 1], nodes[v - 1]);
-        if (is >> w)
+
+        std::istringstream line_is(line);
+
+        int u, v, w;
+
+        if (!(line_is >> u >> v))
         {
-            arc_map[edge] = w;
+            std::cerr << "Invalid MatrixMarket data" << std::endl;
+            return is;
         }
-        else
+
+        auto e = graph.addEdge(graph.nodeFromId(u - 1), graph.nodeFromId(v - 1));
+
+        // Try parsing weight. If it fails, set it to 1
+        if (!(line_is >> w))
         {
-            // Default weight to 1
-            arc_map[edge] = 1;
+            w = 1;
         }
+
+        arc_map[e] = w;
     }
 
     return is;
