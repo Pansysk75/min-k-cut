@@ -1,14 +1,16 @@
 #include <iostream>
 #include <lemon/list_graph.h>
 #include <lemon/preflow.h>
+#include <lemon/lgf_reader.h>
 #include <stack>
+#include "mtx_reader.hpp"
 
 using namespace lemon;
 
 class k_min_cut
 {
     ListDigraph const& _graph;
-    ListDigraph::NodeMap<int> const& _weights;
+    ListDigraph::ArcMap<int> const& _weights;
 
     // The Gomory-Hu tree is encoded in the _p (predecessor) and _fl (min flow) maps as follows:
     // "The edges of T are the final pairs (i,p[i]) for from 2 to n, and edge (i,p[i]) has value fl(i)."
@@ -22,7 +24,7 @@ class k_min_cut
     ListDigraph _tree;
 
 public:
-k_min_cut(ListDigraph const& graph, ListDigraph::NodeMap<int> const& weights)
+k_min_cut(ListDigraph const& graph, ListDigraph::ArcMap<int> const& weights)
     : _graph(graph), _weights(weights), _p(graph), _fl(graph), _tree()
 {
 }
@@ -52,7 +54,7 @@ void run_gomory_hu(){
 
     for (ListDigraph::NodeIt t(s); t != INVALID; ++t){
         if (s == t) continue;
-        Preflow<ListDigraph, ListDigraph::NodeMap<int>> min_cut(_graph, _weights, s, t);
+        Preflow<ListDigraph, ListDigraph::ArcMap<int>> min_cut(_graph, _weights, s, t);
         min_cut.run();
         _fl[t] = min_cut.flowValue();
         for (ListDigraph::NodeIt i(_graph); i != INVALID; ++i){
@@ -163,19 +165,63 @@ void min_k_cut_map(unsigned int k, ListDigraph::NodeMap<unsigned int>& cut_map){
 };
 
 
+void test_graph_read() {
+
+
+    char test_lgf_graph[] =
+        "@nodes\n"
+        "label\n"
+        "0\n"
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "@arcs\n"
+        "   capacity\n"
+        "0 1    1\n"
+        "1 2    1\n"
+        "2 3    1\n"
+        "0 3    5\n"
+        "0 3    10\n"
+        "0 3    7\n"
+        "4 2    1\n"
+        "@attributes\n"
+        "source 0\n"
+        "target 3\n";
+
+    char test_mtx_graph[] =
+        "%%MatrixMarket matrix coordinate real general\n"
+		"% (.mtx ids start from 0)\n"
+		"% Sample graph in Matrix Market format\n"
+		"5 5 7\n"
+		"1 2 1\n"
+		"2 3 1\n"
+		"3 4 1\n"
+		"1 4 5\n"
+		"1 4 10\n"
+		"1 4 7\n"
+		"5 3 1\n";
+
+
+	ListGraph g_lgf, g_mtx;
+	ListGraph::EdgeMap<int> weights_lgf(g_lgf), weights_mtx(g_mtx);
+
+    // Read lgf
+	std::istringstream input_lgf(test_lgf_graph);
+	GraphReader<ListGraph>(g_lgf, input_lgf).
+		edgeMap("capacity", weights_lgf).run();
+
+	// Read mtx
+	std::istringstream input_mtx(test_mtx_graph);
+	readMtxGraph(g_mtx, weights_mtx, input_mtx);
+
+    // Todo: compare that the graphs match
+
+}
 
 int main()
 {
-    using namespace lemon;
+    test_graph_read();
 
-    ListDigraph g;
-    ListDigraph::Node u = g.addNode();
-    ListDigraph::Node v = g.addNode();
-    ListDigraph::Arc a = g.addArc(u, v);
-    std::cout << "Hello World! This is LEMON library here." << std::endl;
-    std::cout << "We have a directed graph with " << countNodes(g) << " nodes "
-         << "and " << countArcs(g) << " arc." << std::endl;
-
-    // Create / Import graph
     return 0;
 }
