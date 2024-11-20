@@ -21,14 +21,18 @@ class k_min_cut
 
     // The predecessor map
     ListGraph::NodeMap<ListGraph::Node> _p;
-    // The min flow map
-    ListGraph::NodeMap<int> _fl;
 
 
 public:
 
+    // The min flow map
+    ListGraph::NodeMap<int> _fl;
     // The Gomory-Hu Tree
     ListGraph _tree;
+    // Tree flows
+    ListGraph::EdgeMap<int> _tree_flows;
+    // Tree labels
+    ListGraph::NodeMap<int> _tree_labels;
 
     k_min_cut(ListGraph const& graph, ListGraph::EdgeMap<int> const& weights)
       : _graph(graph)
@@ -36,6 +40,8 @@ public:
       , _p(graph)
       , _fl(graph)
       , _tree()
+      , _tree_flows(_tree)
+      , _tree_labels(_tree)
     {
     }
 
@@ -60,22 +66,30 @@ public:
     end;
 */
         // Choose a root node
-        ListGraph::NodeIt s(_graph);
+        ListGraph::NodeIt root(_graph);
 
         // Initialize the predecessor map
         for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
-            _p[n] = s;
+            _p[n] = root;
         }
+        _p[root] = INVALID;    
+        _fl[root] = std::numeric_limits<int>::max();
+        ;
 
-        for (ListGraph::NodeIt t(s); t != INVALID; ++t)
+        for (ListGraph::NodeIt s(_graph); s != INVALID; ++s)
         {
-            if (s == t)
+            if (s == root)
                 continue;
+
+            ListGraph::Node t = _p[s];
+
             lemon::Preflow<ListGraph, ListGraph::EdgeMap<int>> min_cut(
                 _graph, _weights, s, t);
             min_cut.run();
-            _fl[t] = min_cut.flowValue();
+
+            _fl[s] = min_cut.flowValue();
+
             for (ListGraph::NodeIt i(_graph); i != INVALID; ++i)
             {
                 if (i != s && min_cut.minCut(i) && _p[i] == t)
@@ -96,39 +110,51 @@ public:
         // and edges (i, p[i]) with weight fl[i].
         // Making it into a graph to make it easier to traverse, however in principle _p is enough to represent the tree.
         // An important property here is that each node has a single parent (except the root node which has none).
+        _tree.clear();
+        // Turns out you can't just copy a graph in this library while keeping the same node/edge ids
+        // We create a map to map the nodes in the original graph to the nodes in the tree
+        ListGraph::NodeMap<ListGraph::Node> node_map(_graph);
         for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
-            _tree.addNode();
+            ListGraph::Node m = _tree.addNode();
+            node_map[n] = m;
+            _tree_labels[m] = _graph.id(n);
         }
 
+        // Now add the edges
         for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
         {
             if (_p[n] != INVALID)
             {
-                _tree.addEdge(n, _p[n]);
+                ListGraph::Node m = node_map[n];
+                ListGraph::Node p = node_map[_p[n]];
+                ListGraph::Edge e = _tree.addEdge(m, p);
+                _tree_flows[e] = _fl[n];
             }
         }
+        
     }
 
     int min_k_cut_value(unsigned int k)
     {
-        // Sum the k smallest values in _fl
-        std::vector<int> k_heap;
+        // Sum the k-1 smallest values in _fl
+        unsigned int n_cuts = k - 1;
+        std::vector<int> heap;    // A heap of size n_cuts
 
-        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::EdgeIt e(_tree); e != INVALID; ++e)
         {
-            k_heap.push_back(_fl[n]);
-            std::push_heap(k_heap.begin(), k_heap.end());
-            if (k_heap.size() > k)
+            heap.push_back(_tree_flows[e]);
+            std::push_heap(heap.begin(), heap.end());
+            if (heap.size() > n_cuts)
             {
-                std::pop_heap(k_heap.begin(), k_heap.end());
-                k_heap.pop_back();
+                std::pop_heap(heap.begin(), heap.end());
+                heap.pop_back();
             }
         }
         int sum = 0;
-        for (int i = 0; i < k; ++i)
+        for (int i = 0; i < n_cuts; ++i)
         {
-            sum += k_heap[i];
+            sum += heap[i];
         }
         return sum;
     }
@@ -139,25 +165,28 @@ public:
         // Creates a cut_map, which stores a unique integer value for each connected component
         // created by the min-k cut
 
-        // Algorithm: Find ids of the k smallest values in _fl
+        // Algorithm: Find ids of the k smallest flow values
         // Make a copy of _tree and delete the k corresponding edges
         // Color the connected components of the resulting graph
 
-        // Find the k smallest values in _fl
-        std::vector<ListGraph::Node> k_heap;
-        auto comp = [&](ListGraph::Node a, ListGraph::Node b) {
-            return _fl[a] < _fl[b];
+        // Find the k-1 smallest values in 
+        unsigned int n_cuts = k - 1;
+        std::vector<ListGraph::Edge> heap;
+        auto comp = [&](ListGraph::Edge a, ListGraph::Edge b) {
+            return _tree_flows[a] < _tree_flows[b];
         };
-        for (ListGraph::NodeIt n(_graph); n != INVALID; ++n)
+        for (ListGraph::EdgeIt e(_tree); e != INVALID; ++e)
         {
-            k_heap.push_back(n);
-            std::push_heap(k_heap.begin(), k_heap.end(), comp);
-            if (k_heap.size() > k)
+            heap.push_back(e);
+            std::push_heap(heap.begin(), heap.end(), comp);
+            if (heap.size() > n_cuts)
             {
-                std::pop_heap(k_heap.begin(), k_heap.end(), comp);
-                k_heap.pop_back();
+                std::pop_heap(heap.begin(), heap.end(), comp);
+                heap.pop_back();
             }
         }
+
+ 
 
         // Make a copy of _tree
         ListGraph tree_copy;
@@ -165,12 +194,9 @@ public:
         copy.run();
 
         // Delete the k corresponding edges
-        for (auto& n : k_heap)
+        for (auto& e : heap)
         {
-            // By construction, node n only has a single outgoing edge
-            ListGraph::OutArcIt e(_tree, n);
-            if (e != INVALID)
-                tree_copy.erase(e);
+            tree_copy.erase(e);
         }
 
         // Color the connected components of the resulting graph
