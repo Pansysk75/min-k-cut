@@ -7,7 +7,7 @@ using namespace lemon;
 
 bool are_graphs_equal(ListGraph& g1, ListGraph& g2)
 {
-    auto getCount = [](auto& first) {
+    auto getCount = [](auto first) {
         int count = 0;
         for (auto it = first; it != INVALID; ++it)
             ++count;

@@ -23,8 +23,8 @@ int main()
 
     ListGraph g;
     ListGraph::EdgeMap<int> weights(g);
-
-    readMtxGraph(g, weights, std::istringstream(mtx_graph));
+    auto mtx_istream=std::istringstream(mtx_graph);
+    readMtxGraph(g, weights, mtx_istream);
 
     k_min_cut kmc(g, weights);
 
