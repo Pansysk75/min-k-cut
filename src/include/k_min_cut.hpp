@@ -6,7 +6,7 @@
 #include <lemon/preflow.h>
 #include <stack>
 #include "mtx_reader.hpp"
-
+#include "util.hpp"
 
 class k_min_cut
 {
@@ -22,9 +22,7 @@ class k_min_cut
     // The predecessor map
     ListGraph::NodeMap<ListGraph::Node> _p;
 
-
 public:
-
     // The min flow map
     ListGraph::NodeMap<int> _fl;
     // The Gomory-Hu Tree
@@ -65,6 +63,12 @@ public:
         end;
     end;
 */
+        double time_min_cut = 0;
+        double time_relabel = 0;
+        double time_total = 0;
+
+        timer t_total;
+
         // Choose a root node
         ListGraph::NodeIt root(_graph);
 
@@ -73,7 +77,7 @@ public:
         {
             _p[n] = root;
         }
-        _p[root] = INVALID;    
+        _p[root] = INVALID;
         _fl[root] = std::numeric_limits<int>::max();
         ;
 
@@ -82,13 +86,19 @@ public:
             if (s == root)
                 continue;
 
+            timer t_min_cut;
+
             ListGraph::Node t = _p[s];
 
             lemon::Preflow<ListGraph, ListGraph::EdgeMap<int>> min_cut(
                 _graph, _weights, s, t);
             min_cut.run();
 
+            time_min_cut += t_min_cut.tick();
+
             _fl[s] = min_cut.flowValue();
+
+            timer t_relabel;
 
             for (ListGraph::NodeIt i(_graph); i != INVALID; ++i)
             {
@@ -104,6 +114,8 @@ public:
                 _fl[s] = _fl[t];
                 _fl[t] = min_cut.flowValue();
             }
+
+            time_relabel += t_relabel.tick();
         }
 
         // Create the Gomory-Hu tree. The tree is an undirected graph with the same nodes as the original graph
@@ -132,12 +144,21 @@ public:
                 _tree_flows[e] = _fl[n];
             }
         }
-        
+
+        time_total = t_total.tick();
+
+        // Write times to json log
+        global_json_logger.add("gh_time_min_cut", time_min_cut);
+        global_json_logger.add("gh_time_relabel", time_relabel);
+        global_json_logger.add("gh_time_total", time_total);
     }
 
     int min_k_cut_value(unsigned int k)
     {
         // Sum the k-1 smallest values in _fl
+
+        timer timer;
+
         unsigned int n_cuts = k - 1;
         std::vector<int> heap;    // A heap of size n_cuts
 
@@ -156,6 +177,10 @@ public:
         {
             sum += heap[i];
         }
+
+        // Write time to json log
+        global_json_logger.add("min_k_cut_value_time", timer.tick());
+
         return sum;
     }
 
@@ -169,7 +194,10 @@ public:
         // Make a copy of _tree and delete the k corresponding edges
         // Color the connected components of the resulting graph
 
-        // Find the k-1 smallest values in 
+        timer t_total;
+
+        // Find the k-1 smallest flow values
+        timer t_find_min_flows;
         unsigned int n_cuts = k - 1;
         std::vector<ListGraph::Edge> heap;
         auto comp = [&](ListGraph::Edge a, ListGraph::Edge b) {
@@ -185,8 +213,10 @@ public:
                 heap.pop_back();
             }
         }
+        global_json_logger.add(
+            "min_k_cut_map_time_find_min_flows", t_find_min_flows.tick());
 
- 
+        timer t_dfs;
 
         // Make a copy of _tree
         ListGraph tree_copy;
@@ -214,8 +244,7 @@ public:
                     ListGraph::Node m = stack.top();
                     stack.pop();
                     cut_map[m] = color;
-                    for (ListGraph::OutArcIt e(tree_copy, m); e != INVALID;
-                         ++e)
+                    for (ListGraph::OutArcIt e(tree_copy, m); e != INVALID; ++e)
                     {
                         ListGraph::Node v = tree_copy.target(e);
                         if (cut_map[v] == 0)
@@ -226,5 +255,8 @@ public:
                 }
             }
         }
+
+        global_json_logger.add("min_k_cut_map_time_dfs", t_dfs.tick());
+        global_json_logger.add("min_k_cut_map_time_total", t_total.tick());
     }
 };
