@@ -2,6 +2,7 @@
 #include <lemon/lgf_reader.h>
 #include <lemon/list_graph.h>
 #include "mtx_reader.hpp"
+#include "dimacs_reader.hpp"
 
 using namespace lemon;
 
@@ -152,8 +153,19 @@ bool test_with_weights()
                             "1 4 7\n"
                             "5 3 1\n";
 
-    ListGraph g_lgf, g_mtx;
-    ListGraph::EdgeMap<int> weights_lgf(g_lgf), weights_mtx(g_mtx);
+    char test_dimacs_graph[] = "c this is a comment line in a dimacs file\n"
+                               "p sp 5 7\n"
+                               "a 1 2 1\n"
+                               "a 2 3 1\n"
+                               "a 3 4 1\n"
+                               "a 1 4 5\n"
+                               "a 1 4 10\n"
+                               "a 1 4 7\n"
+                               "a 5 3 1\n";
+
+    ListGraph g_lgf, g_mtx, g_dimacs;
+    ListGraph::EdgeMap<int> weights_lgf(g_lgf), weights_mtx(g_mtx),
+        weights_dimacs(g_dimacs);
 
     // Read lgf
     std::istringstream input_lgf(test_lgf_graph);
@@ -165,11 +177,25 @@ bool test_with_weights()
     std::istringstream input_mtx(test_mtx_graph);
     readMtxGraph(g_mtx, weights_mtx, input_mtx);
 
-    bool success = are_graphs_equal(g_lgf, g_mtx) &&
-        are_maps_equal(g_lgf, g_mtx, weights_lgf, weights_mtx);
+    // Read dimacs
+    std::istringstream input_dimacs(test_dimacs_graph);
+    readDimacsGraph(g_dimacs, weights_dimacs, input_dimacs);
 
-    if (!success)
-        std::cerr << "'test_with_weights()' failed" << std::endl;
+    bool success = true;
+
+    if (!are_graphs_equal(g_lgf, g_mtx) ||
+        !are_maps_equal(g_lgf, g_mtx, weights_lgf, weights_mtx)) {
+        std::cerr << "test_with_weights: LGF and MTX graphs do not match" << std::endl;
+        success = false;
+    }
+
+    if (!are_graphs_equal(g_lgf, g_dimacs) ||
+        !are_maps_equal(g_lgf, g_dimacs, weights_lgf, weights_dimacs))
+    {
+        std::cerr << "test_with_weights: LGF and DIMACS graphs do not match"
+                  << std::endl;
+        success = false;
+    }
 
     return success;
 }

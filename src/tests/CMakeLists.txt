@@ -7,5 +7,5 @@ function (_add_test name)
 endfunction()
 
 
-_add_test(test_mtx_reader)
+_add_test(test_readers)
 _add_test(test_k_min_cut)
