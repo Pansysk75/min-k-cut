@@ -1,0 +1,40 @@
+c FILE			: out/rand-8-32.gr
+c No. of vertices	: 8
+c No. of directed edges	: 32
+c Max. weight		: 100
+c Min. weight		: 0
+c A directed arc from u to v of weight w
+c is represented below as ' a  u  v  w '
+p sp 8 32
+a 2 3 8
+a 2 4 38
+a 2 3 20
+a 2 8 65
+a 3 8 87
+a 3 6 27
+a 3 7 93
+a 3 6 99
+a 3 1 84
+a 4 2 65
+a 4 5 61
+a 5 7 12
+a 5 8 21
+a 5 3 58
+a 5 4 57
+a 5 6 61
+a 5 6 60
+a 6 2 4
+a 6 3 22
+a 6 3 49
+a 6 5 99
+a 6 5 58
+a 6 5 82
+a 7 6 27
+a 7 4 17
+a 8 5 66
+a 8 7 55
+a 8 7 78
+a 8 7 2
+a 8 5 98
+a 8 7 21
+a 8 3 58
