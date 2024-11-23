@@ -101,10 +101,15 @@ int main(int argc, char** argv)
     // Remove self-loops, double edges, and connect non-connected components
     preprocess_graph(g, weights);
 
+    // Output number of nodes and edges
+    global_json_logger.add("n_nodes", countNodes(g));
+    global_json_logger.add("n_edges", countEdges(g));
+
     // Here begins the actual algorithm
     k_min_cut kmc(g, weights);
 
-    kmc.run_gomory_hu();
+    //kmc.run_gomory_hu();
+    kmc.run_gomory_hu_2();
     kmc.min_k_cut_value(3);
 
     ListGraph::NodeMap<unsigned int> cut_colors(g);
